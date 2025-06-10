@@ -1,70 +1,149 @@
-# Getting Started with Create React App
+# Music Mate - Your Musical AI Companion
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A web-based AI music companion that listens, learns, and responds to your musical ideas in real-time. Whether you're creating music, exploring music therapy, or just having fun, Music Mate provides an interactive musical experience that adapts to your playing.
 
-## Available Scripts
+## Vision
 
-In the project directory, you can run:
+Music Mate aims to be more than just a practice tool - it's a musical companion that can:
+- **Respond to Your Ideas**: Listen to what you play and generate complementary musical responses
+- **Adapt to Your Style**: Learn from your playing patterns and adapt its responses accordingly
+- **Inspire Creativity**: Help you explore new musical ideas and directions
+- **Support Music Therapy**: Provide a responsive, non-judgmental musical environment
+- **Make Music Fun**: Create an engaging, interactive musical experience
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Real-time Pitch Detection**: Uses the Web Audio API to detect notes as you play
+- **Metronome**: Customizable tempo and time signature
+- **Visual Feedback**: Real-time visualization of your playing
+- **Note Tracking**: Keeps track of the notes you play during your session
+- **Modern UI**: Clean, responsive interface built with React
+- **AI Response**: Coming soon - AI-powered musical responses to your playing
+- **MIDI Export**: Export your recorded notes as MIDI files for use in other music software
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Getting Started
 
-### `npm test`
+### Prerequisites
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js (v14 or higher)
+- npm or yarn
+- A modern web browser (Chrome recommended)
 
-### `npm run build`
+### Installation
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Clone the repository:
+```bash
+git clone https://github.com/velde/ai-jam.git
+cd ai-jam
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+3. Start the development server:
+```bash
+npm start
+# or
+yarn start
+```
 
-### `npm run eject`
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Usage
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+1. Click "Start Jam" to begin a session
+2. Allow microphone access when prompted
+3. Play your instrument or sing - the app will detect and display the notes
+4. Use the metronome controls to adjust tempo and time signature
+5. Click "Stop Jam" to end the session
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Technical Details
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- Built with React and JavaScript
+- Uses Tone.js for audio synthesis and processing
+- Implements pitch detection using the Pitchy library
+- MIDI file generation with midi-writer-js
+- Responsive design using CSS Grid and Flexbox
+- AI integration coming soon!
 
-## Learn More
+## Roadmap & Future Plans
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### AI Implementation Strategy
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+#### Phase 1: Basic Pattern Recognition
+- Implement real-time musical pattern analysis using TensorFlow.js
+- Use Magenta.js for basic music generation
+- Focus on simple call-and-response patterns
+- Implement basic chord progression analysis
+- Add MIDI export for both user and AI-generated notes
 
-### Code Splitting
+#### Phase 2: Advanced Musical Understanding
+- Integrate [Music Transformer](https://github.com/magenta/magenta-js/tree/master/music) for more sophisticated musical understanding
+- Add support for:
+  - Melodic contour analysis
+  - Rhythmic pattern recognition
+  - Harmonic progression prediction
+  - Style transfer capabilities
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+#### Phase 3: Interactive AI Response
+- Implement real-time AI response generation using:
+  - [Tone.js](https://tonejs.github.io/) for sound synthesis
+  - [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for audio processing
+  - [TensorFlow.js](https://www.tensorflow.org/js) for on-device inference
+- Add features like:
+  - Dynamic accompaniment generation
+  - Melodic improvisation
+  - Harmonic accompaniment
+  - Rhythmic synchronization
 
-### Analyzing the Bundle Size
+#### Phase 4: Learning & Adaptation
+- Implement user preference learning
+- Add style adaptation capabilities
+- Develop personalized response patterns
+- Create a feedback loop for continuous improvement
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Technical Considerations
+- **On-device Processing**: Prioritize client-side processing for low latency
+- **Model Optimization**: Use quantized models for better performance
+- **Audio Quality**: Maintain high-quality audio processing
+- **Browser Compatibility**: Ensure cross-browser support
+- **Performance**: Optimize for real-time interaction
 
-### Making a Progressive Web App
+### Potential Libraries & Tools
+- [TensorFlow.js](https://www.tensorflow.org/js) - Machine learning
+- [Magenta.js](https://github.com/magenta/magenta-js) - Music generation
+- [Tone.js](https://tonejs.github.io/) - Audio synthesis
+- [ONNX Runtime](https://onnxruntime.ai/) - Model inference
+- [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) - Audio processing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Development Priorities
+1. Basic pattern recognition and response
+2. Real-time performance optimization
+3. User experience and interface improvements
+4. Advanced AI features
+5. Community feedback and iteration
 
-### Advanced Configuration
+## Contributing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Contributions are welcome! Whether you're interested in:
+- Enhancing the AI response system
+- Improving the audio processing
+- Adding new features
+- Fixing bugs
+- Improving documentation
 
-### Deployment
+Please feel free to submit a Pull Request.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## License
 
-### `npm run build` fails to minify
+This project is licensed under the MIT License - see the LICENSE file for details.
+## Acknowledgments
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- [Tone.js](https://tonejs.github.io/) for audio processing
+- [Pitchy](https://github.com/peterkhayes/pitchy) for pitch detection
+- [React](https://reactjs.org/) for the UI framework
+
