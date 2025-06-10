@@ -922,7 +922,7 @@ export default function App() {
           cursor: "pointer"
         }}
       >
-        {isCheckingPermissions ? "Checking Permissions..." : (isRunning ? "Stop" : "Start")} Jam
+        {isCheckingPermissions ? "Checking Permissions..." : (isRunning ? "Stop" : "Start")}
       </button>
 
       <div style={{ 

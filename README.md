@@ -55,11 +55,11 @@ yarn start
 
 ## Usage
 
-1. Click "Start Jam" to begin a session
+1. Click "Start" to begin a session
 2. Allow microphone access when prompted
 3. Play your instrument or sing - the app will detect and display the notes
 4. Use the metronome controls to adjust tempo and time signature
-5. Click "Stop Jam" to end the session
+5. Click "Stop" to end the session
 
 ## Technical Details
 
