@@ -556,6 +556,12 @@ export default function App() {
         // Starting
         console.log('Starting jam...');
         
+        // Create a new Tone.js context if needed
+        if (!Tone.context || Tone.context.state === 'closed') {
+          console.log('Creating new Tone.js context...');
+          Tone.setContext(new Tone.Context());
+        }
+        
         // Ensure context is running
         if (Tone.context.state !== 'running') {
           console.log('Starting Tone.js context...');
@@ -777,11 +783,9 @@ export default function App() {
         sourceRef.current = null;
       }
       
-      // Close Tone.js context
-      if (Tone.context.state !== 'closed') {
-        console.log('Closing Tone.js context...');
-        Tone.context.close();
-      }
+      // Don't close the Tone.js context here
+      // This was causing the issue as the context was being closed
+      // but not properly reinitialized
     };
   }, []); // Empty dependency array means this runs only on mount/unmount
 
