@@ -33,8 +33,8 @@ Music Mate aims to be more than just a practice tool - it's a musical companion 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/velde/ai-jam.git
-cd ai-jam
+git clone https://github.com/velde/music-mate.git
+cd music-mate
 ```
 
 2. Install dependencies:
@@ -141,6 +141,7 @@ Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
 ## Acknowledgments
 
 - [Tone.js](https://tonejs.github.io/) for audio processing
