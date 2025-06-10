@@ -568,17 +568,21 @@ export default function App() {
           await Tone.start();
         }
         
-        // Start metronome
-        await startMetronome();
-        
-        // Start audio analysis
+        // Start audio analysis first
         await startAudioAnalysis();
         
+        // Then start metronome
+        await startMetronome();
+        
         setIsRunning(true);
+        isRunningRef.current = true;
         console.log('Jam started');
       } else {
         // Stopping
         console.log('Stopping jam...');
+        
+        // Set running ref to false first
+        isRunningRef.current = false;
         
         // Stop metronome
         stopMetronome();
@@ -647,8 +651,7 @@ export default function App() {
       console.log('Initializing audio buffer...');
       const bufferSize = 2048;
       bufferRef.current = new Float32Array(bufferSize);
-      audioBufferRef.current = audioCtxRef.current.createBuffer(1, bufferSize, audioCtxRef.current.sampleRate);
-      console.log('Audio buffer initialized:', audioBufferRef.current);
+      console.log('Audio buffer initialized');
       
       // Initialize pitch detector
       console.log('Initializing pitch detector...');
