@@ -114,8 +114,10 @@ const AIMusicGrid = ({
   }, [numberOfBars, playheadPosition, aiNotes, bpm]);
 
   return (
-    <div style={{ margin: '20px 0' }}>
-      <h3 style={{ margin: '0 0 10px 0', color: '#666' }}>AI Response</h3>
+    <div style={{ margin: '0 0 10px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+        <h3 style={{ margin: '0', color: '#666' }}>AI Response</h3>
+      </div>
       <canvas
         ref={canvasRef}
         width={800}

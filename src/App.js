@@ -1013,100 +1013,119 @@ export default function App() {
         </div>
       )}
 
-      <div style={{ marginBottom: 20 }}>
-        <label htmlFor="bars" style={{ marginRight: 10 }}>
-          Number of Bars:
-        </label>
-        <select
-          id="bars"
-          value={numberOfBars}
-          onChange={handleBarCountChange}
-          style={{ padding: "5px 10px" }}
-          disabled={isRunning}
-        >
-          {barCountOptions.map(num => (
-            <option key={num} value={num}>
-              {num} Bars
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <label htmlFor="grid-division" style={{ marginRight: 10 }}>
-          Grid Division:
-        </label>
-        <select
-          id="grid-division"
-          value={gridDivision}
-          onChange={(e) => setGridDivision(Number(e.target.value))}
-          style={{ padding: "5px 10px" }}
-          disabled={isRunning}
-        >
-          {GRID_DIVISION_OPTIONS.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <label htmlFor="max-duration" style={{ marginRight: 10 }}>
-          Maximum Note Duration:
-        </label>
-        <select
-          id="max-duration"
-          value={maxNoteDuration}
-          onChange={(e) => setMaxNoteDuration(Number(e.target.value))}
-          style={{ padding: "5px 10px" }}
-          disabled={isRunning}
-        >
-          {MAX_DURATION_OPTIONS.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ marginTop: 20, maxWidth: "400px", margin: "20px auto" }}>
-        <label htmlFor="tempo" style={{ display: "block", marginBottom: 10 }}>
-          Tempo: {bpm} BPM
-        </label>
-        <input
-          type="range"
-          id="tempo"
-          min="40"
-          max="200"
-          value={bpm}
-          onChange={handleTempoChange}
-          style={{ width: "100%" }}
-          disabled={isRunning}
-        />
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "space-between", 
-          fontSize: "0.8em", 
-          color: "#666",
-          marginTop: 5
+      <div style={{ 
+        maxWidth: "800px", 
+        margin: "20px auto",
+        display: "flex",
+        gap: "20px",
+        justifyContent: "space-between"
+      }}>
+        {/* Grid Settings Box */}
+        <div style={{
+          width: "400px",
+          padding: "20px",
+          border: "1px solid #ccc",
+          borderRadius: "10px",
+          backgroundColor: "#f9f9f9"
         }}>
-          <span>40 BPM</span>
-          <span>200 BPM</span>
-        </div>
-      </div>
+          <h3 style={{ margin: "0 0 15px 0", color: "#666" }}>Grid Settings</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+            <label htmlFor="bars">Number of Bars:</label>
+            <select
+              id="bars"
+              value={numberOfBars}
+              onChange={handleBarCountChange}
+              style={{ padding: "5px 10px" }}
+              disabled={isRunning}
+            >
+              {barCountOptions.map(num => (
+                <option key={num} value={num}>
+                  {num} Bars
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-          <input
-            type="checkbox"
-            checked={isAudibleClick}
-            onChange={(e) => setIsAudibleClick(e.target.checked)}
-            disabled={isRunning}
-          />
-          Audible Metronome
-        </label>
-        <div style={{ height: "40px" }}> {/* Fixed height container */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+            <label htmlFor="grid-division">Grid Division:</label>
+            <select
+              id="grid-division"
+              value={gridDivision}
+              onChange={(e) => setGridDivision(Number(e.target.value))}
+              style={{ padding: "5px 10px" }}
+              disabled={isRunning}
+            >
+              {GRID_DIVISION_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <label htmlFor="max-duration">Maximum Note Duration:</label>
+            <select
+              id="max-duration"
+              value={maxNoteDuration}
+              onChange={(e) => setMaxNoteDuration(Number(e.target.value))}
+              style={{ padding: "5px 10px" }}
+              disabled={isRunning}
+            >
+              {MAX_DURATION_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Tempo Settings Box */}
+        <div style={{
+          width: "400px",
+          padding: "20px",
+          border: "1px solid #ccc",
+          borderRadius: "10px",
+          backgroundColor: "#f9f9f9"
+        }}>
+          <h3 style={{ margin: "0 0 15px 0", color: "#666" }}>Tempo Settings</h3>
+          <div style={{ marginBottom: "20px" }}>
+            <label htmlFor="tempo" style={{ display: "block", marginBottom: "10px" }}>
+              Tempo: {bpm} BPM
+            </label>
+            <input
+              type="range"
+              id="tempo"
+              min="40"
+              max="200"
+              value={bpm}
+              onChange={handleTempoChange}
+              style={{ width: "100%" }}
+              disabled={isRunning}
+            />
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              fontSize: "0.8em", 
+              color: "#666",
+              marginTop: "5px"
+            }}>
+              <span>40 BPM</span>
+              <span>200 BPM</span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <input
+              type="checkbox"
+              id="audible-click"
+              checked={isAudibleClick}
+              onChange={(e) => setIsAudibleClick(e.target.checked)}
+              disabled={isRunning}
+            />
+            <label htmlFor="audible-click">Audible Metronome</label>
+          </div>
           {isAudibleClick && (
             <p style={{ 
               margin: "5px 0 0 0",
@@ -1118,25 +1137,6 @@ export default function App() {
             </p>
           )}
         </div>
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <button 
-          onClick={() => setIsAddMode(!isAddMode)}
-          className={`px-4 py-2 rounded ${isAddMode ? 'bg-blue-500' : 'bg-purple-500'} text-white`}
-        >
-          {isAddMode ? 'Add Mode' : 'Replace Mode'}
-        </button>
-        <p style={{ 
-          margin: "5px 0 0 0",
-          fontSize: "0.9em",
-          color: "#666",
-          fontStyle: "italic"
-        }}>
-          {isAddMode ? 
-            "Add Mode: New notes will be added if they have different pitches" :
-            "Replace Mode: New notes will replace existing notes at the same time position"}
-        </p>
       </div>
 
       <button 
@@ -1157,7 +1157,7 @@ export default function App() {
 
       <div style={{ 
         marginTop: 20, 
-        maxWidth: "600px", 
+        maxWidth: "800px", 
         margin: "20px auto",
         padding: "20px",
         border: "1px solid #ccc",
@@ -1247,6 +1247,8 @@ export default function App() {
           bpm={bpm}
           validNoteRange={window.magentaManager?.getValidNoteRange()}
           gridDivision={gridDivision}
+          isAddMode={isAddMode}
+          onModeChange={() => setIsAddMode(!isAddMode)}
         />
         <AIMusicGrid
           numberOfBars={numberOfBars}

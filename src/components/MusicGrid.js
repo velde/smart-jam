@@ -6,7 +6,9 @@ const MusicGrid = ({
   userNotes,
   bpm,
   validNoteRange = { min: 48, max: 83 }, // Default values as fallback
-  gridDivision = 8 // Default to 32nd notes
+  gridDivision = 8, // Default to 32nd notes
+  isAddMode,
+  onModeChange
 }) => {
   const canvasRef = useRef(null);
   
@@ -133,7 +135,27 @@ const MusicGrid = ({
   }, [numberOfBars, playheadPosition, userNotes, bpm, validNoteRange, gridDivision]);
 
   return (
-    <div style={{ margin: '20px 0' }}>
+    <div style={{ margin: '0 0 10px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+        <h3 style={{ margin: '0', color: '#666' }}>User Notes</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ color: '#666', fontSize: '0.9em' }}>Mode:</span>
+          <button 
+            onClick={onModeChange}
+            style={{
+              padding: '4px 8px',
+              fontSize: '0.9em',
+              backgroundColor: isAddMode ? '#4CAF50' : '#ff4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {isAddMode ? 'Add Notes' : 'Replace Notes'}
+          </button>
+        </div>
+      </div>
       <canvas
         ref={canvasRef}
         width={800}
