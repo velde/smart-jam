@@ -1,13 +1,14 @@
 // MVP: Real-Time Music Mate (React + Tone.js + Pitchy)
-// This version includes a metronome, mic input, pitch detection, and basic chord logging
+// This version includes MIDI export functionality
 
 import React, { useState, useRef, useEffect } from "react";
 import * as Tone from "tone";
 import { PitchDetector } from "pitchy";
-import MIDIManager from './MIDIManager';
 import MusicGrid from './components/MusicGrid';
+import AIMusicGrid from './components/AIMusicGrid';
 import AudioBuffer from './AudioBuffer';
-import MidiWriter from 'midi-writer-js';
+import { Midi } from '@tonejs/midi';
+import MagentaManager from './MagentaManager';
 
 // Add note conversion utilities
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -42,8 +43,11 @@ export default function App() {
   const canvasRef = useRef(null);
   const [isAudibleClick, setIsAudibleClick] = useState(false);
   const visualClickRef = useRef(null);
-  const playheadPositionRef = useRef(0);
   const [playheadPosition, setPlayheadPosition] = useState(0);
+  const [isAddMode, setIsAddMode] = useState(true);
+  const [aiNotes, setAiNotes] = useState([]);
+  const [isWaitingForMagenta, setIsWaitingForMagenta] = useState(false);
+  const previousNotesRef = useRef([]); // Add ref to track latest previous notes
 
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
@@ -54,24 +58,14 @@ export default function App() {
   const animationFrameRef = useRef(null);
   const isRunningRef = useRef(false);
 
-  const [midiManager] = useState(() => {
-    try {
-      return new MIDIManager();
-    } catch (error) {
-      console.error('Error initializing MIDI manager:', error);
-      return null;
-    }
-  });
-  const [midiOutputs, setMidiOutputs] = useState([]);
-  const [selectedMidiOutput, setSelectedMidiOutput] = useState(null);
-  const [isMidiConnected, setIsMidiConnected] = useState(false);
-
   const [numberOfBars, setNumberOfBars] = useState(4);
+  const [gridDivision, setGridDivision] = useState(8); // 8 = 32nd notes
+  const [maxNoteDuration, setMaxNoteDuration] = useState(32); // 32 = whole note (in 32nd notes)
   const [hasMidiSupport, setHasMidiSupport] = useState(false);
-  const audioBufferRef = useRef(new AudioBuffer());
 
   // Add new state for quantized notes
   const [userNotes, setUserNotes] = useState([]);
+  const userNotesRef = useRef([]); // Add ref to track latest notes
 
   // Add new state for continuous note tracking
   const [currentNoteState, setCurrentNoteState] = useState({
@@ -87,6 +81,41 @@ export default function App() {
   const BEATS_PER_BAR = 4;
   const SUBDIVISIONS = 8; // 32nd notes
 
+  // Add constants for grid settings
+  const GRID_DIVISION_OPTIONS = [
+    { value: 8, label: '32nd notes' },
+    { value: 4, label: '16th notes' },
+    { value: 2, label: '8th notes' }
+  ];
+
+  const MAX_DURATION_OPTIONS = [
+    { value: 2, label: '32nd note' },
+    { value: 4, label: '16th note' },
+    { value: 8, label: '8th note' },
+    { value: 16, label: 'Quarter note' },
+    { value: 32, label: 'Half note' },
+    { value: 64, label: 'Whole note' }
+  ];
+
+  // Update Tone.js references
+  const [midiSynth] = useState(() => new Tone.PolySynth(Tone.Synth).toDestination());
+
+  // Initialize MagentaManager
+  useEffect(() => {
+    const initMagenta = async () => {
+      try {
+        const manager = new MagentaManager();
+        await manager.initialize();
+        window.magentaManager = manager;
+        console.log('MagentaManager initialized and attached to window');
+      } catch (error) {
+        console.error('Failed to initialize MagentaManager:', error);
+      }
+    };
+
+    initMagenta();
+  }, []);
+
   // Get available microphones
   const getMicrophones = async () => {
     try {
@@ -96,12 +125,6 @@ export default function App() {
       // Then enumerate devices
       const devices = await navigator.mediaDevices.enumerateDevices();
       const mics = devices.filter(device => device.kind === 'audioinput');
-      
-      console.log('Available microphones:', mics.map(mic => ({
-        deviceId: mic.deviceId,
-        label: mic.label,
-        groupId: mic.groupId
-      })));
       
       setAvailableMics(mics);
       
@@ -166,18 +189,8 @@ export default function App() {
       }
 
       // Check MIDI support without showing error
-      if (navigator.requestMIDIAccess && midiManager) {
+      if (navigator.requestMIDIAccess) {
         setHasMidiSupport(true);
-        try {
-          const connected = await midiManager.connect();
-          setIsMidiConnected(connected);
-          if (connected) {
-            setMidiOutputs(midiManager.getOutputs());
-          }
-        } catch (error) {
-          console.error('MIDI connection error:', error);
-          setIsMidiConnected(false);
-        }
       } else {
         console.log('MIDI is not supported in this browser');
         setHasMidiSupport(false);
@@ -188,23 +201,25 @@ export default function App() {
     };
 
     checkBrowserSupport();
-  }, [midiManager]);
+  }, []);
 
   // Add function to calculate position in subdivisions
   const calculatePosition = (time) => {
     const secondsPerBeat = 60 / bpm;
-    const secondsPerSubdivision = secondsPerBeat / SUBDIVISIONS;
+    const secondsPerSubdivision = secondsPerBeat / gridDivision;
     const position = Math.round(time / secondsPerSubdivision);
-    return position % (numberOfBars * BEATS_PER_BAR * SUBDIVISIONS);
+    return position % (numberOfBars * BEATS_PER_BAR * gridDivision);
   };
 
   // Add function to handle note start
   const handleNoteStart = (pitch, time) => {
     console.log('Starting new note:', { pitch, time });
     const position = calculatePosition(time);
+    console.log('Calculated position:', position);
     
     // Only start a new note if we don't have an active note
     if (!currentNoteState.isActive) {
+      console.log('No active note, starting new one');
       setCurrentNoteState({
         isActive: true,
         pitch,
@@ -218,8 +233,15 @@ export default function App() {
       const newMidiNote = Math.round(69 + 12 * Math.log2(pitch / 440));
       const pitchDifference = Math.abs(newMidiNote - currentMidiNote);
       
+      console.log('Active note exists, checking pitch difference:', {
+        currentMidiNote,
+        newMidiNote,
+        pitchDifference
+      });
+      
       if (pitchDifference >= 1) {
         // End current note and start new one
+        console.log('Pitch change significant, ending current note');
         handleNoteEnd(time);
         setCurrentNoteState({
           isActive: true,
@@ -228,6 +250,24 @@ export default function App() {
           startPosition: position,
           lastUpdateTime: time
         });
+      } else {
+        // Check if we need to split the note due to maximum duration
+        const currentDuration = time - currentNoteState.startTime;
+        const secondsPerBeat = 60 / bpm;
+        const maxDurationInSeconds = (maxNoteDuration / gridDivision) * secondsPerBeat;
+        
+        if (currentDuration >= maxDurationInSeconds) {
+          // End current note and start new one with same pitch
+          console.log('Maximum duration reached, splitting note');
+          handleNoteEnd(time);
+          setCurrentNoteState({
+            isActive: true,
+            pitch,
+            startTime: time,
+            startPosition: position,
+            lastUpdateTime: time
+          });
+        }
       }
     }
   };
@@ -236,6 +276,9 @@ export default function App() {
   const handleNoteEnd = (time) => {
     if (currentNoteState.isActive) {
       const endPosition = calculatePosition(time);
+      console.log('Current note state:', currentNoteState);
+      console.log('End position:', endPosition);
+      
       const note = {
         pitch: Math.round(69 + 12 * Math.log2(currentNoteState.pitch / 440)),
         startPosition: currentNoteState.startPosition,
@@ -244,11 +287,12 @@ export default function App() {
         endTime: time
       };
       
-      console.log('Ending note:', note);
+      console.log('Created note:', note);
       // Add the completed note to userNotes
       setUserNotes(prev => {
         const newNotes = [...prev, note];
-        console.log('Updated userNotes array:', newNotes);
+        console.log('Previous notes:', prev);
+        console.log('New notes array:', newNotes);
         return newNotes;
       });
       
@@ -260,6 +304,8 @@ export default function App() {
         startPosition: null,
         lastUpdateTime: null
       });
+    } else {
+      console.log('No active note to end');
     }
   };
 
@@ -280,13 +326,15 @@ export default function App() {
       pitch: clampedMidiNote,
       startPosition: position % (numberOfBars * BEATS_PER_BAR * SUBDIVISIONS),
       endPosition: (position + 1) % (numberOfBars * BEATS_PER_BAR * SUBDIVISIONS),
-      time: time
+      startTime: time,
+      endTime: time + secondsPerSubdivision,
+      velocity: 100  // Add velocity for MIDI compatibility
     };
   };
 
   const listen = () => {
-    if (!analyserRef.current || !detectorRef.current) {
-      console.error('Analyser or detector not initialized');
+    if (!analyserRef.current) {
+      console.error('Analyser not initialized');
       return;
     }
     
@@ -295,8 +343,8 @@ export default function App() {
     let frameCount = 0;
     let silenceStartTime = null;
     const SILENCE_THRESHOLD = 0.2;
-    let lastNoteTime = 0;
     let lastNotePosition = -1;
+    let lastLoopEndPosition = -1;
 
     const loop = () => {
       if (!isRunningRef.current) {
@@ -332,34 +380,150 @@ export default function App() {
 
         const currentTime = Tone.now();
         const currentPosition = Math.round(currentTime / (60 / bpm / SUBDIVISIONS));
+        const totalPositions = numberOfBars * BEATS_PER_BAR * SUBDIVISIONS;
+        const normalizedPosition = currentPosition % totalPositions;
+
+        // Check for loop end - only when crossing from last position to 0
+        if (normalizedPosition === 0 && (lastLoopEndPosition === totalPositions - 1 || lastLoopEndPosition === -1)) {
+          console.log('Loop end detected at normalized position:', normalizedPosition, 'total positions:', totalPositions);
+          console.log('Current userNotes:', userNotes);
+          
+          // Compare current and previous notes using the two-buffer approach
+          console.log('userNotesRef.current:', userNotesRef.current);
+          console.log('previousNotesRef.current:', previousNotesRef.current);
+          console.log('JSON string of userNotesRef:', JSON.stringify(userNotesRef.current));
+          console.log('JSON string of previousNotes:', JSON.stringify(previousNotesRef.current));
+          const hasBufferChanged = JSON.stringify(userNotesRef.current) !== JSON.stringify(previousNotesRef.current);
+          console.log('hasBufferChanged:', hasBufferChanged);
+          
+          if (hasBufferChanged && !isWaitingForMagenta) {
+            console.log('Buffer changed, sending to Magenta...');
+            
+            // Combine consecutive notes of the same pitch
+            const combinedNotes = [];
+            let currentNote = null;
+
+            userNotesRef.current.forEach(note => {
+              if (!currentNote) {
+                currentNote = { ...note };
+              } else if (note.pitch === currentNote.pitch) {
+                // Extend the current note
+                currentNote.endTime = note.endTime;
+                currentNote.endPosition = note.endPosition;
+              } else {
+                // Different pitch, save current note and start new one
+                combinedNotes.push(currentNote);
+                currentNote = { ...note };
+              }
+            });
+
+            // Don't forget to add the last note
+            if (currentNote) {
+              combinedNotes.push(currentNote);
+            }
+
+            // Convert notes to Magenta format
+            const magentaNotes = combinedNotes.map(note => ({
+              pitch: Math.max(0, Math.min(127, note.pitch)), // Clamp to valid MIDI range
+              startTime: note.startTime,
+              endTime: note.endTime,
+              velocity: note.velocity || 100 // Default velocity if not set
+            }));
+            console.log('Converted notes for Magenta:', magentaNotes);
+            
+            // Update previous notes immediately to prevent re-sending
+            previousNotesRef.current = [...userNotesRef.current];
+            setIsWaitingForMagenta(true);
+            
+            // Send to Magenta for generation
+            if (window.magentaManager) {
+              console.log('Magenta manager found, generating response...');
+              window.magentaManager.generateResponse(magentaNotes)
+                .then(response => {
+                  console.log('Got response from Magenta:', response);
+                  if (response && response.length > 0) {
+                    // Convert response notes to match our format
+                    const convertedResponse = response.map(note => {
+                      // Convert time to grid positions based on BPM and subdivisions
+                      const secondsPerBeat = 60 / bpm;
+                      const secondsPerSubdivision = secondsPerBeat / SUBDIVISIONS;
+                      const startPosition = Math.floor(note.startTime / secondsPerSubdivision);
+                      const endPosition = Math.ceil(note.endTime / secondsPerSubdivision);
+                      
+                      return {
+                        pitch: note.pitch,
+                        startPosition,
+                        endPosition,
+                        startTime: note.startTime,
+                        endTime: note.endTime,
+                        velocity: note.velocity
+                      };
+                    });
+                    console.log('Setting AI notes:', convertedResponse);
+                    setAiNotes(convertedResponse);
+                  }
+                })
+                .catch(error => {
+                  console.error('Error generating response:', error);
+                })
+                .finally(() => {
+                  // Allow new notes to be sent after response (success or failure)
+                  setIsWaitingForMagenta(false);
+                });
+            } else {
+              console.error('Magenta manager not found on window object');
+              setIsWaitingForMagenta(false);
+            }
+          } else {
+            console.log('No buffer changes detected at loop end or waiting for Magenta response');
+          }
+        }
+        lastLoopEndPosition = normalizedPosition;
 
         // Handle note detection
         if (isSoundDetected) {
           const [pitch, clarity] = detectorRef.current.findPitch(buffer, audioCtxRef.current.sampleRate);
           
           if (pitch && clarity > 0.7) {
-            // Only add a note if we're at a new position
-            if (currentPosition !== lastNotePosition) {
-              const quantized = quantizeNote(pitch, currentTime);
-              
-              // Add the note to userNotes
-              setUserNotes(prev => {
-                const newNotes = [...prev, quantized];
-                return newNotes;
-              });
-              
-              lastNotePosition = currentPosition;
-              lastNoteTime = currentTime;
-            }
+            const position = calculatePosition(currentTime);
+            const midiNote = Math.max(0, Math.min(127, Math.round(69 + 12 * Math.log2(pitch / 440))));
             
-            setPitchHz(pitch.toFixed(2));
-            setCurrentNote(frequencyToNote(pitch));
-          } else {
-            setPitchHz(null);
-            setCurrentNote({ note: '-', octave: '-' });
+            // Create a new note
+            const note = {
+              pitch: midiNote,
+              startPosition: position,
+              endPosition: position + 1,
+              startTime: currentTime,
+              endTime: currentTime + (60 / bpm / gridDivision)
+            };
+            
+            // Add the note to userNotes
+            setUserNotes(prev => {
+              const newNotes = isAddMode ? 
+                (prev.some(n => n.startPosition === position && n.pitch === midiNote) ? prev : [...prev, note]) :
+                [...prev.filter(n => n.startPosition !== position), note];
+              userNotesRef.current = newNotes; // Update ref with latest notes
+              return newNotes;
+            });
           }
         } else {
-          // No sound detected
+          // If no sound is detected and we have an active note
+          if (currentNoteState.isActive) {
+            if (!silenceStartTime) {
+              silenceStartTime = currentTime;
+            } else if (currentTime - silenceStartTime > 0.1) { // End note after 100ms of silence
+              handleNoteEnd(currentTime);
+              silenceStartTime = null;
+            }
+          }
+        }
+        
+        // Always update pitch display
+        if (isSoundDetected) {
+          const [pitch, clarity] = detectorRef.current.findPitch(buffer, audioCtxRef.current.sampleRate);
+          setPitchHz(pitch ? pitch.toFixed(2) : null);
+          setCurrentNote(pitch ? frequencyToNote(pitch) : { note: '-', octave: '-' });
+        } else {
           setPitchHz(null);
           setCurrentNote({ note: '-', octave: '-' });
           
@@ -461,7 +625,6 @@ export default function App() {
     try {
       // Ensure Tone.js is initialized
       console.log('Starting metronome initialization...');
-      console.log('Tone.js version:', Tone.version);
       console.log('Tone.js context state:', Tone.context.state);
       
       // Wait for context to be ready
@@ -497,27 +660,22 @@ export default function App() {
       // Schedule the metronome
       console.log('Scheduling metronome...');
       Tone.Transport.scheduleRepeat((time) => {
-        // Only update if enough time has passed (prevent multiple updates)
-        if (time - lastUpdateTime >= 0.25) { // 0.25 seconds = quarter note at 60 BPM
-          if (isAudibleClick) {
-            synth.triggerAttackRelease("C2", "8n", time);
-          }
-          
-          // Update position
-          position = (position + 1) % totalPositions;
-          console.log('Updating playhead position:', position, 'at time:', time);
-          setPlayheadPosition(position);
-          lastUpdateTime = time;
-          
-          // Trigger visual click
-          if (visualClickRef.current) {
-            visualClickRef.current.style.backgroundColor = '#4CAF50';
-            setTimeout(() => {
-              if (visualClickRef.current) {
-                visualClickRef.current.style.backgroundColor = '#eee';
-              }
-            }, 50);
-          }
+        if (isAudibleClick) {
+          synth.triggerAttackRelease("C2", "8n", time);
+        }
+        
+        // Update position
+        position = (position + 1) % totalPositions;
+        setPlayheadPosition(position);
+        
+        // Trigger visual click
+        if (visualClickRef.current) {
+          visualClickRef.current.style.backgroundColor = '#4CAF50';
+          setTimeout(() => {
+            if (visualClickRef.current) {
+              visualClickRef.current.style.backgroundColor = '#eee';
+            }
+          }, 50);
         }
       }, "4n");
       
@@ -559,7 +717,7 @@ export default function App() {
         // Create a new Tone.js context if needed
         if (!Tone.context || Tone.context.state === 'closed') {
           console.log('Creating new Tone.js context...');
-          Tone.setContext(new Tone.Context());
+          Tone.context.setContext(new Tone.context.Context());
         }
         
         // Ensure context is running
@@ -715,17 +873,7 @@ export default function App() {
 
   // Add new function to handle MIDI output selection
   const handleMidiOutputChange = (event) => {
-    setSelectedMidiOutput(event.target.value);
-  };
-
-  // Modify the playNote function to also send MIDI
-  const playNote = (note) => {
-    if (isMidiConnected && selectedMidiOutput) {
-      midiManager.sendNoteOn(note, 100, 0, selectedMidiOutput);
-      setTimeout(() => {
-        midiManager.sendNoteOff(note, 0, selectedMidiOutput);
-      }, 500);
-    }
+    // Remove this function as it's no longer needed
   };
 
   // Add this after the tempo control section
@@ -738,29 +886,68 @@ export default function App() {
     setPlayheadPosition(playheadPosition % newBarCount);
   };
 
-  // Modify the exportMIDI function to include both tracks
   const exportMIDI = () => {
-    if (!userNotes.length) return;
+    // Calculate timing constants
+    const PPQ = 480; // Pulses Per Quarter note
+    const ticksPerBeat = PPQ;
+    const ticksPerSubdivision = ticksPerBeat / gridDivision;
 
-    const midi = new MidiWriter.Writer();
-    const track = midi.addTrack();
+    // Create a new MIDI file
+    const midi = new Midi();
+
+    // Add user track
+    const userTrack = midi.addTrack();
+    userTrack.name = "User Notes";
+
+    // Add AI track
+    const aiTrack = midi.addTrack();
+    aiTrack.name = "AI Response";
 
     // Add user notes to track
-    userNotes.forEach(note => {
-      track.addNote({
-        midi: note.pitch,
-        time: note.startTime,
-        duration: note.endTime - note.startTime,
-        velocity: 80
+    userNotes.forEach((note) => {
+      // Calculate timing in seconds
+      const startTime = (note.startPosition * 60) / (bpm * gridDivision);
+      const endTime = (note.endPosition * 60) / (bpm * gridDivision);
+
+      // Add 12 to the pitch to raise it an octave
+      const adjustedPitch = note.pitch + 12;
+
+      // Add the note
+      userTrack.addNote({
+        midi: adjustedPitch,
+        time: startTime,
+        duration: endTime - startTime,
+        velocity: 0.8
       });
     });
 
+    // Add AI notes to track
+    aiNotes.forEach((note) => {
+      // Calculate timing in seconds
+      const startTime = (note.startPosition * 60) / (bpm * gridDivision);
+      const endTime = (note.endPosition * 60) / (bpm * gridDivision);
+
+      // Add 12 to the pitch to raise it an octave
+      const adjustedPitch = note.pitch + 12;
+
+      // Add the note
+      aiTrack.addNote({
+        midi: adjustedPitch,
+        time: startTime,
+        duration: endTime - startTime,
+        velocity: 0.8
+      });
+    });
+
+    // Set tempo
+    midi.header.setTempo(bpm);
+
     // Download the MIDI file
-    const blob = new Blob([midi.buildFile()], { type: 'audio/midi' });
+    const blob = new Blob([midi.toArray()], { type: 'audio/midi' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'jam-session.mid';
+    a.download = 'music-mate-export.mid';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -826,27 +1013,6 @@ export default function App() {
         </div>
       )}
 
-      {hasMidiSupport && midiOutputs.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <label htmlFor="midi-select" style={{ marginRight: 10 }}>
-            Select MIDI Output:
-          </label>
-          <select
-            id="midi-select"
-            value={selectedMidiOutput || ''} 
-            onChange={handleMidiOutputChange}
-            style={{ padding: "5px 10px" }}
-          >
-            <option value="">None</option>
-            {midiOutputs.map((output) => (
-              <option key={output.id} value={output.id}>
-                {output.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       <div style={{ marginBottom: 20 }}>
         <label htmlFor="bars" style={{ marginRight: 10 }}>
           Number of Bars:
@@ -861,6 +1027,44 @@ export default function App() {
           {barCountOptions.map(num => (
             <option key={num} value={num}>
               {num} Bars
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label htmlFor="grid-division" style={{ marginRight: 10 }}>
+          Grid Division:
+        </label>
+        <select
+          id="grid-division"
+          value={gridDivision}
+          onChange={(e) => setGridDivision(Number(e.target.value))}
+          style={{ padding: "5px 10px" }}
+          disabled={isRunning}
+        >
+          {GRID_DIVISION_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label htmlFor="max-duration" style={{ marginRight: 10 }}>
+          Maximum Note Duration:
+        </label>
+        <select
+          id="max-duration"
+          value={maxNoteDuration}
+          onChange={(e) => setMaxNoteDuration(Number(e.target.value))}
+          style={{ padding: "5px 10px" }}
+          disabled={isRunning}
+        >
+          {MAX_DURATION_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>
@@ -914,6 +1118,25 @@ export default function App() {
             </p>
           )}
         </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <button 
+          onClick={() => setIsAddMode(!isAddMode)}
+          className={`px-4 py-2 rounded ${isAddMode ? 'bg-blue-500' : 'bg-purple-500'} text-white`}
+        >
+          {isAddMode ? 'Add Mode' : 'Replace Mode'}
+        </button>
+        <p style={{ 
+          margin: "5px 0 0 0",
+          fontSize: "0.9em",
+          color: "#666",
+          fontStyle: "italic"
+        }}>
+          {isAddMode ? 
+            "Add Mode: New notes will be added if they have different pitches" :
+            "Replace Mode: New notes will replace existing notes at the same time position"}
+        </p>
       </div>
 
       <button 
@@ -1008,29 +1231,46 @@ export default function App() {
         />
       </div>
 
-      <div style={{ marginTop: 20, maxWidth: "800px", margin: "20px auto" }}>
+      <div style={{ 
+        marginTop: 20, 
+        maxWidth: "800px", 
+        margin: "20px auto",
+        padding: "20px",
+        border: "1px solid #ccc",
+        borderRadius: "10px",
+        backgroundColor: "#f9f9f9"
+      }}>
         <MusicGrid
           numberOfBars={numberOfBars}
           playheadPosition={playheadPosition}
           userNotes={userNotes}
           bpm={bpm}
+          validNoteRange={window.magentaManager?.getValidNoteRange()}
+          gridDivision={gridDivision}
         />
-        <button
-          onClick={exportMIDI}
-          disabled={!userNotes.length}
-          style={{
-            padding: "10px 20px",
-            fontSize: "1em",
-            backgroundColor: userNotes.length > 0 ? "#2196F3" : "#ccc",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            cursor: userNotes.length > 0 ? "pointer" : "not-allowed",
-            marginTop: "10px"
-          }}
-        >
-          Export MIDI
-        </button>
+        <AIMusicGrid
+          numberOfBars={numberOfBars}
+          playheadPosition={playheadPosition}
+          aiNotes={aiNotes}
+          bpm={bpm}
+        />
+        <div style={{ marginTop: "10px", display: "flex", gap: "10px", justifyContent: "center" }}>
+          <button
+            onClick={exportMIDI}
+            disabled={!userNotes.length}
+            style={{
+              padding: "10px 20px",
+              fontSize: "1em",
+              backgroundColor: userNotes.length > 0 ? "#2196F3" : "#ccc",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              cursor: userNotes.length > 0 ? "pointer" : "not-allowed"
+            }}
+          >
+            Export MIDI
+          </button>
+        </div>
       </div>
 
       {error && (
