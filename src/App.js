@@ -48,6 +48,7 @@ export default function App() {
   const [aiNotes, setAiNotes] = useState([]);
   const [isWaitingForMagenta, setIsWaitingForMagenta] = useState(false);
   const previousNotesRef = useRef([]); // Add ref to track latest previous notes
+  const modeRef = useRef({ isAddMode: true }); // Add ref to track mode state
 
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
@@ -290,7 +291,9 @@ export default function App() {
       console.log('Created note:', note);
       // Add the completed note to userNotes
       setUserNotes(prev => {
-        const newNotes = [...prev, note];
+        const newNotes = modeRef.current.isAddMode ? 
+          (prev.some(n => n.startPosition === note.startPosition && n.pitch === note.pitch) ? prev : [...prev, note]) :
+          [...prev.filter(n => n.startPosition !== note.startPosition), note];
         console.log('Previous notes:', prev);
         console.log('New notes array:', newNotes);
         return newNotes;
@@ -525,7 +528,7 @@ export default function App() {
             
             // Add the note to userNotes
             setUserNotes(prev => {
-              const newNotes = isAddMode ? 
+              const newNotes = modeRef.current.isAddMode ? 
                 (prev.some(n => n.startPosition === position && n.pitch === midiNote) ? prev : [...prev, note]) :
                 [...prev.filter(n => n.startPosition !== position), note];
               userNotesRef.current = newNotes; // Update ref with latest notes
@@ -978,7 +981,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'music-mate-export.mid';
+    a.download = 'smart-jam-export.mid';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1010,9 +1013,17 @@ export default function App() {
     };
   }, []); // Empty dependency array means this runs only on mount/unmount
 
+  // Update mode change handler
+  const handleModeChange = () => {
+    const newMode = !isAddMode;
+    setIsAddMode(newMode);
+    modeRef.current.isAddMode = newMode;
+    console.log('Mode changed to:', newMode ? 'Add Mode' : 'Replace Mode');
+  };
+
   return (
     <div style={{ textAlign: "center", marginTop: 50 }}>
-      <h1>Music Mate MVP</h1>
+      <h1>Smart Jam</h1>
       <p style={{ 
         maxWidth: "600px", 
         margin: "0 auto 20px", 
@@ -1279,7 +1290,7 @@ export default function App() {
           validNoteRange={window.magentaManager?.getValidNoteRange()}
           gridDivision={gridDivision}
           isAddMode={isAddMode}
-          onModeChange={() => setIsAddMode(!isAddMode)}
+          onModeChange={handleModeChange}
         />
         <AIMusicGrid
           numberOfBars={numberOfBars}

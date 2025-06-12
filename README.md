@@ -1,10 +1,10 @@
-# Music Mate - Your Musical AI Companion
+# Smart Jam - Your Musical AI Companion
 
-A web-based AI music companion that listens, learns, and responds to your musical ideas in real-time. Whether you're creating music, exploring music therapy, or just having fun, Music Mate provides an interactive musical experience that adapts to your playing.
+A web-based AI music companion that listens, learns, and responds to your musical ideas in real-time. Whether you're creating music, exploring music therapy, or just having fun, Smart Jam provides an interactive musical experience that adapts to your playing.
 
 ## Vision
 
-Music Mate aims to be more than just a practice tool - it's a musical companion that can:
+Smart Jam aims to be more than just a practice tool - it's a musical companion that can:
 - **Respond to Your Ideas**: Listen to what you play and generate complementary musical responses
 - **Adapt to Your Style**: Learn from your playing patterns and adapt its responses accordingly
 - **Inspire Creativity**: Help you explore new musical ideas and directions
@@ -33,8 +33,8 @@ Music Mate aims to be more than just a practice tool - it's a musical companion 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/velde/music-mate.git
-cd music-mate
+git clone https://github.com/velde/smart-jam.git
+cd smart-jam
 ```
 
 2. Install dependencies:
