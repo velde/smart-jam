@@ -1,4 +1,4 @@
-// MVP: Real-Time Music Mate (React + Tone.js + Pitchy)
+// MVP: Real-Time Smart Jam (React + Tone.js + Pitchy)
 // This version includes MIDI export functionality
 
 import React, { useState, useRef, useEffect } from "react";
