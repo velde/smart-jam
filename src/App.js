@@ -345,6 +345,8 @@ export default function App() {
     const SILENCE_THRESHOLD = 0.2;
     let lastNotePosition = -1;
     let lastLoopEndPosition = -1;
+    let lastBeatTime = 0;
+    let startTime = null;
 
     const loop = () => {
       if (!isRunningRef.current) {
@@ -378,9 +380,33 @@ export default function App() {
         const isSoundDetected = currentEnergy > VOLUME_THRESHOLD;
         setIsDetectingSound(isSoundDetected);
 
+        // Use real-time for audio analysis
         const currentTime = Tone.now();
-        const currentPosition = Math.round(currentTime / (60 / bpm / SUBDIVISIONS));
-        const totalPositions = numberOfBars * BEATS_PER_BAR * SUBDIVISIONS;
+        
+        // Initialize start time if not set
+        if (startTime === null) {
+          startTime = currentTime;
+        }
+        
+        // Calculate time relative to start
+        const relativeTime = currentTime - startTime;
+        const secondsPerBeat = 60 / bpm;
+        const currentBeat = Math.floor(relativeTime / secondsPerBeat);
+        
+        // Check if we've crossed a beat boundary
+        if (currentBeat > lastBeatTime) {
+          lastBeatTime = currentBeat;
+          // Synchronize with Transport position at beat boundaries
+          const transportPosition = Math.floor(Tone.Transport.position.split(':')[0]);
+          if (transportPosition !== currentBeat % (numberOfBars * BEATS_PER_BAR)) {
+            console.log('Resynchronizing with Transport at beat:', currentBeat);
+            Tone.Transport.position = `${currentBeat % (numberOfBars * BEATS_PER_BAR)}:0:0`;
+          }
+        }
+
+        // Calculate position for note detection relative to start time
+        const currentPosition = Math.floor(relativeTime / (60 / bpm / gridDivision));
+        const totalPositions = numberOfBars * BEATS_PER_BAR * gridDivision;
         const normalizedPosition = currentPosition % totalPositions;
 
         // Check for loop end - only when crossing from last position to 0
@@ -485,16 +511,16 @@ export default function App() {
           const [pitch, clarity] = detectorRef.current.findPitch(buffer, audioCtxRef.current.sampleRate);
           
           if (pitch && clarity > 0.7) {
-            const position = calculatePosition(currentTime);
+            const position = normalizedPosition;
             const midiNote = Math.max(0, Math.min(127, Math.round(69 + 12 * Math.log2(pitch / 440))));
             
-            // Create a new note
+            // Create a new note with relative timing
             const note = {
               pitch: midiNote,
               startPosition: position,
               endPosition: position + 1,
-              startTime: currentTime,
-              endTime: currentTime + (60 / bpm / gridDivision)
+              startTime: relativeTime,
+              endTime: relativeTime + (60 / bpm / gridDivision)
             };
             
             // Add the note to userNotes
@@ -651,13 +677,16 @@ export default function App() {
       console.log('Setting initial tempo:', bpm);
       Tone.Transport.bpm.value = bpm;
       
+      // Reset Transport position and playhead
+      Tone.Transport.position = "0:0:0";
+      setPlayheadPosition(0);
+      
       // Track total positions
-      const totalPositions = numberOfBars * 4;
+      const totalPositions = numberOfBars * BEATS_PER_BAR;
       let position = 0;
-      let lastUpdateTime = 0;
       console.log('Initial playhead position:', position, 'total positions:', totalPositions);
       
-      // Schedule the metronome
+      // Schedule the metronome at beat level
       console.log('Scheduling metronome...');
       Tone.Transport.scheduleRepeat((time) => {
         if (isAudibleClick) {
@@ -696,6 +725,8 @@ export default function App() {
       metronomeRef.current.synth.dispose();
       metronomeRef.current = null;
     }
+    // Reset playhead position when stopping
+    setPlayheadPosition(0);
   };
 
   const handleTempoChange = (event) => {
