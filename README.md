@@ -13,13 +13,35 @@ Smart Jam aims to be more than just a practice tool - it's a musical companion t
 
 ## Features
 
-- **Real-time Pitch Detection**: Uses the Web Audio API to detect notes as you play
-- **Metronome**: Customizable tempo and time signature
-- **Visual Feedback**: Real-time visualization of your playing
-- **Note Tracking**: Keeps track of the notes you play during your session
-- **Modern UI**: Clean, responsive interface built with React
-- **AI Response**: Coming soon - AI-powered musical responses to your playing
-- **MIDI Export**: Export your recorded notes as MIDI files for use in other music software
+- **Real-time Note Detection**: 
+  - Uses Web Audio API and Pitchy for accurate pitch detection
+  - Visual waveform display
+  - Input level monitoring
+  - Multiple microphone support
+
+- **Interactive Grid System**:
+  - Adjustable number of bars (2, 4, or 8)
+  - Multiple grid divisions (32nd, 16th, or 8th notes)
+  - Configurable maximum note duration
+  - Add/Replace note modes
+  - Real-time playhead visualization
+
+- **AI Musical Response**:
+  - Powered by Magenta.js and TensorFlow.js
+  - Real-time musical pattern analysis
+  - Generates complementary responses to your playing
+  - Maintains musical context and style
+  - Separate visualization for AI responses
+
+- **Metronome**:
+  - Adjustable tempo (40-200 BPM)
+  - Visual and optional audible click
+  - Synchronized with note detection
+
+- **Export Options**:
+  - MIDI export with separate tracks for user and AI notes
+  - Uses @tonejs/midi for high-quality MIDI generation
+  - Preserves timing and velocity information
 
 ## Getting Started
 
@@ -27,7 +49,8 @@ Smart Jam aims to be more than just a practice tool - it's a musical companion t
 
 - Node.js (v14 or higher)
 - npm or yarn
-- A modern web browser (Chrome recommended)
+- A modern web browser (Chrome recommended for best audio performance)
+- A microphone or audio input device
 
 ### Installation
 
@@ -40,35 +63,47 @@ cd smart-jam
 2. Install dependencies:
 ```bash
 npm install
-# or
-yarn install
 ```
 
 3. Start the development server:
 ```bash
 npm start
-# or
-yarn start
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## Usage
 
-1. Click "Start" to begin a session
-2. Allow microphone access when prompted
-3. Play your instrument or sing - the app will detect and display the notes
-4. Use the metronome controls to adjust tempo and time signature
-5. Click "Stop" to end the session
+1. **Start a Jam Session**:
+   - Select your input device
+   - Adjust the tempo using the slider
+   - Click "Start" to begin
+
+2. **Play Your Instrument**:
+   - The grid will show your notes in real-time
+   - Use the mode button to switch between adding and replacing notes
+   - Watch the waveform and pitch detection displays
+
+3. **AI Collaboration**:
+   - The AI will generate responses based on your playing
+   - Responses appear in the lower grid
+   - Export both parts as MIDI for further use
+
+## Browser Compatibility
+
+- Chrome (recommended)
+- Firefox (requires additional configuration)
+- Edge
+- Safari (limited support)
 
 ## Technical Details
 
 - Built with React and JavaScript
 - Uses Tone.js for audio synthesis and processing
 - Implements pitch detection using the Pitchy library
-- MIDI file generation with midi-writer-js
+- AI powered by Magenta.js and TensorFlow.js
+- MIDI generation with @tonejs/midi
 - Responsive design using CSS Grid and Flexbox
-- AI integration coming soon!
 
 ## Roadmap & Future Plans
 
@@ -146,5 +181,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - [Tone.js](https://tonejs.github.io/) for audio processing
 - [Pitchy](https://github.com/peterkhayes/pitchy) for pitch detection
-- [React](https://reactjs.org/) for the UI framework
+- [Magenta.js](https://github.com/magenta/magenta-js) for AI music generation
+- [@tonejs/midi](https://github.com/Tonejs/Midi) for MIDI file generation
 
