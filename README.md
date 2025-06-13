@@ -175,7 +175,9 @@ Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This code is published for demonstration purposes only.
+All rights reserved © Velde Vainio.
+No commercial use or redistribution is permitted without written permission.
 
 ## Acknowledgments
 
