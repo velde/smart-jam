@@ -181,8 +181,13 @@ No commercial use or redistribution is permitted without written permission.
 
 ## Acknowledgments
 
-- [Tone.js](https://tonejs.github.io/) for audio processing
-- [Pitchy](https://github.com/peterkhayes/pitchy) for pitch detection
-- [Magenta.js](https://github.com/magenta/magenta-js) for AI music generation
-- [@tonejs/midi](https://github.com/Tonejs/Midi) for MIDI file generation
+This project uses the following open-source libraries:
+
+- [React](https://reactjs.org/) - MIT License
+- [Tone.js](https://tonejs.github.io/) - MIT License
+- [@tonejs/midi](https://github.com/Tonejs/Midi) - MIT License
+- [Pitchy](https://github.com/peterkhayes/pitchy) - MIT License
+- [Magenta.js](https://github.com/magenta/magenta-js) - Apache License 2.0
+
+While this project is proprietary, we acknowledge and appreciate the open-source community's contributions through these excellent libraries. Each library's license is included in the `node_modules` directory of this project.
 
